@@ -20,7 +20,7 @@ function runApp() {
   inquirer.prompt({
     name: "selection",
     type: "list",
-    choices: ["View Departments","View Roles", "View Employees", "Exit"]
+    choices: ["View Departments","View Roles", "View Employees", "Add Department", "Exit"]
   }).then(answer => {
         switch (answer.selection) {
           case "View Departments":
@@ -31,6 +31,9 @@ function runApp() {
           break;
           case "View Employees":
           viewEmployees();
+          break;
+          case "Add Department":
+          addDepartment();
           break;
           case "Exit":
           process.exit();
@@ -59,5 +62,19 @@ function viewEmployees() {
     if (err) throw err;
     console.table(res);
     runApp();
+  })
+}
+
+function addDepartment() {
+  inquirer.prompt({
+    name: "addDepartment",
+    type: "input",
+    message: "Add Department:"
+  }).then(answer => {
+      let query = `INSERT INTO department (name) VALUES ("${answer.addDepartment}");`;
+      connection.query(query, function (err, res) {
+        if (err) throw err;
+        runApp();
+      })
   })
 }
