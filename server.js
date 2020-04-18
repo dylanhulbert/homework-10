@@ -8,19 +8,19 @@ var connection = mysql.createConnection({
     user: "root",
     password: "password",
     database: "employee_tracker"
-});
+})
 
 connection.connect(function(err) {
   if (err) throw err;
   console.log("connected as id " + connection.threadId);
   runApp();
-});
+})
 
 function runApp() {
   inquirer.prompt({
     name: "Options",
     type: "list",
-    choices: ["View Departments","View Roles", "View Employees", "Add Department", "Add Roles", "Exit"]
+    choices: ["View Departments","View Roles", "View Employees", "Add Department", "Add Roles", "Update Roles", "Exit"]
   }).then(answer => {
         switch (answer.Options) {
           case "View Departments":
@@ -37,6 +37,9 @@ function runApp() {
           break;
           case "Add Roles":
           addRoles();
+          break;
+          case "Update Roles":
+          updateRoles();
           break;
           case "Exit":
           process.exit();
@@ -90,17 +93,17 @@ function addRoles() {
       {
       name: "title",
       type: "input",
-      message: "What title:"
+      message: "What Title:"
       }, 
       {
       name: "salary",
       type: "input",
-      message: "What salary:"
+      message: "What Salary:"
       }, 
       {
       name: "department",
       type: "list",
-      message: "What department:",
+      message: "What Department:",
       choices: res
       }
       ]).then(answer => {
@@ -112,7 +115,46 @@ function addRoles() {
             connection.query(`INSERT INTO role (title, salary, department_id) VALUES ("${answer.title}", ${answer.salary}, ${savedId});`, function (err, res) {
             runApp();
             })
-          });
+          })
       })
-  });
+  })
+}
+
+function updateRoles() {
+  connection.query(`SELECT CONCAT(first_name, ' ', last_name) AS name FROM employee;`, function (err, res) {
+    if (err) throw err;
+    inquirer.prompt({
+      name: "employee",
+      type: "list",
+      message: "Which Employee:",
+      choices: res
+      }).then(answer => {
+          connection.query(`SELECT id FROM employee WHERE CONCAT(first_name, ' ', last_name) = "${answer.employee}";`, function (err, res) {
+            if (err) throw err;
+            const employeeId = res[0].id;
+            const query = `SELECT title FROM role`;
+            connection.query(query, function (err, res) {
+              if (err) throw err;
+              let choicesArray = res.map(item => { return item.title });
+              inquirer.prompt({
+                name: "newRole",
+                type: "list",
+                message: "Which Role:",
+                choices: choicesArray
+                }).then(answer => {
+                    const query = `SELECT id FROM role WHERE title = "${answer.newRole}";`;
+                    connection.query(query, function (err, res) {
+                      if (err) throw err;
+                      const roleId = res[0].id;
+                      const query = `UPDATE employee SET role_id = ${roleId} WHERE id = ${employeeId};`
+                      connection.query(query, function (err, res) {
+                        if (err) throw err;
+                        runApp();
+                      })
+                    })
+                  })
+            })
+          })
+        })
+  })
 }
