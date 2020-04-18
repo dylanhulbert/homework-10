@@ -1,7 +1,9 @@
+// node modules
 const mysql = require("mysql");
 const inquirer = require("inquirer");
 const cTable = require("console.table");
 
+// db connection
 var connection = mysql.createConnection({
     host: "localhost",
     port: 3306,
@@ -10,17 +12,19 @@ var connection = mysql.createConnection({
     database: "employee_tracker"
 })
 
+// node server
 connection.connect(function(err) {
   if (err) throw err;
   console.log("connected as id " + connection.threadId);
   runApp();
 })
 
+// select action
 function runApp() {
   inquirer.prompt({
     name: "Options",
     type: "list",
-    choices: ["View Departments","View Roles", "View Employees", "Add Department", "Add Roles", "Update Roles", "Add Employees", "Exit"]
+    choices: ["Add Department", "Add Roles", "Add Employees", "View Departments","View Roles", "View Employees", "Update Roles", "Exit"]
   }).then(answer => {
         switch (answer.Options) {
           case "View Departments":
@@ -50,6 +54,7 @@ function runApp() {
       })
 }
 
+// displays all departments
 function viewDepartments() {
   connection.query("SELECT * FROM department", function (err, res) {
     if (err) throw err;
@@ -58,6 +63,7 @@ function viewDepartments() {
   })
 }
 
+// displays all roles
 function viewRoles() {
   connection.query("SELECT * FROM role", function (err, res) {
     if (err) throw err;
@@ -66,6 +72,7 @@ function viewRoles() {
   })
 }
 
+// displays all employees
 function viewEmployees() {
   connection.query("SELECT * FROM employee", function (err, res) {
     if (err) throw err;
@@ -74,20 +81,23 @@ function viewEmployees() {
   })
 }
 
+// create/add single department
 function addDepartment() {
   inquirer.prompt({
     name: "addDepartment",
     type: "input",
-    message: "Add Department:"
+    message: "Department Name:"
   }).then(answer => {
       let query = `INSERT INTO department (name) VALUES ("${answer.addDepartment}");`;
       connection.query(query, function (err, res) {
         if (err) throw err;
+        console.log("** Department Created **")
         runApp();
       })
   })
 }
 
+// create/add single role 
 function addRoles() {
   const query = `SELECT name FROM department`;
   connection.query(query, function (err, res) {
@@ -96,17 +106,17 @@ function addRoles() {
       {
       name: "title",
       type: "input",
-      message: "What Title:"
+      message: "Role Title:"
       }, 
       {
       name: "salary",
       type: "input",
-      message: "What Salary:"
+      message: "Salary:"
       }, 
       {
       name: "department",
       type: "list",
-      message: "What Department:",
+      message: "Which Department:",
       choices: res
       }
       ]).then(answer => {
@@ -116,6 +126,7 @@ function addRoles() {
             if (err) throw err;
             const savedId = res[0].id;
             connection.query(`INSERT INTO role (title, salary, department_id) VALUES ("${answer.title}", ${answer.salary}, ${savedId});`, function (err, res) {
+            console.log("** Role Created **")
             runApp();
             })
           })
@@ -123,6 +134,7 @@ function addRoles() {
   })
 }
 
+// updates single employee role
 function updateRoles() {
   connection.query(`SELECT CONCAT(first_name, ' ', last_name) AS name FROM employee;`, function (err, res) {
     if (err) throw err;
@@ -152,6 +164,7 @@ function updateRoles() {
                       const query = `UPDATE employee SET role_id = ${roleId} WHERE id = ${employeeId};`
                       connection.query(query, function (err, res) {
                         if (err) throw err;
+                        console.log("** Role Updated **")
                         runApp();
                       })
                     })
@@ -162,6 +175,7 @@ function updateRoles() {
   })
 }
 
+// creates a new employee row
 function addEmployees() {
   const query = `SELECT title FROM role`;
   connection.query(query, function (err, res) {
@@ -205,6 +219,7 @@ function addEmployees() {
                     if (answer.managerName === "None") {
                     connection.query(`INSERT INTO employee (first_name, last_name, role_id) VALUES ("${firstName}", "${lastName}", ${savedId});`, function (err, res) {
                       if (err) throw err;
+                      console.log("** Employee Created **")
                       runApp();
                     })} else {
                           const query = `SELECT id FROM employee WHERE CONCAT(first_name, ' ', last_name) = "${answer.managerName}";`;
@@ -212,6 +227,7 @@ function addEmployees() {
                           if (err) throw err;
                           connection.query(`INSERT INTO employee (first_name, last_name, role_id, manager_id) VALUES ("${firstName}", "${lastName}", ${savedId}, ${res[0].id});`, function (err, res) {
                             if (err) throw err;
+                            console.log("** Employee Created **")
                             runApp();
                           })
                         })
