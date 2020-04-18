@@ -18,11 +18,11 @@ connection.connect(function(err) {
 
 function runApp() {
   inquirer.prompt({
-    name: "selection",
+    name: "Options",
     type: "list",
-    choices: ["View Departments","View Roles", "View Employees", "Add Department", "Exit"]
+    choices: ["View Departments","View Roles", "View Employees", "Add Department", "Add Roles", "Exit"]
   }).then(answer => {
-        switch (answer.selection) {
+        switch (answer.Options) {
           case "View Departments":
           viewDepartments();
           break;
@@ -34,6 +34,9 @@ function runApp() {
           break;
           case "Add Department":
           addDepartment();
+          break;
+          case "Add Roles":
+          addRoles();
           break;
           case "Exit":
           process.exit();
@@ -77,4 +80,39 @@ function addDepartment() {
         runApp();
       })
   })
+}
+
+function addRoles() {
+  const query = `SELECT name FROM department`;
+  connection.query(query, function (err, res) {
+    if (err) throw err;
+    inquirer.prompt([
+      {
+      name: "title",
+      type: "input",
+      message: "What title:"
+      }, 
+      {
+      name: "salary",
+      type: "input",
+      message: "What salary:"
+      }, 
+      {
+      name: "department",
+      type: "list",
+      message: "What department:",
+      choices: res
+      }
+      ]).then(answer => {
+          console.log(answer.department);
+          const query = `SELECT id FROM department WHERE name = "${answer.department}";`;
+          connection.query(query, function (err, res) {
+            if (err) throw err;
+            const savedId = res[0].id;
+            connection.query(`INSERT INTO role (title, salary, department_id) VALUES ("${answer.title}", ${answer.salary}, ${savedId});`, function (err, res) {
+            runApp();
+            })
+          });
+      })
+  });
 }
